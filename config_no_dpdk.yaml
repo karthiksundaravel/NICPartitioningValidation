@@ -74,7 +74,7 @@ network_config:
       -
         type: ovs_bond
         name: bond_ovs
-        bonding_options: mode=active-backup
+        ovs_options: bond_mode=active-backup
         members:
           -
             type: sriov_vf
