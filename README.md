@@ -9,6 +9,7 @@ The standalone validation would require 2 baremetal machines with SR-IOV capable
 
 ```bash
 sed 's/^\(GRUB_CMDLINE_LINUX=".*\)"/\1 iommu=pt intel_iommu=on default_hugepagesz=1GB hugepagesz=1G hugepages=10"/g' -i /etc/default/grub
+grub2-mkconfig -o /etc/grub2.cfg
 ```
 Reboot the machine after running the set_boot_params.sh
 
