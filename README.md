@@ -28,7 +28,7 @@ Run the script with the above parameters configured
 3. Generate a config.yaml with all the desired network objects. A sample nic-config yaml is supplied for DPDK and non DPDK use cases. The nic_config_gen.py would generate the config.yaml using the sample yaml files and value.yaml. The sample config file has placeholder for configurations like PF name, VF's VLAN tag for the network and value.yaml has the values of these platform configurations.
 
 ```bash
-python nic_config_gen.py -v value.yaml -s config_dpdk_template.yaml -o config.yaml
+python nic_config_gen.py -v value.yaml -s config_dpdk.yaml -o config.yaml
 ```
 The generated config.yaml will have the placeholder's filled :)
 
