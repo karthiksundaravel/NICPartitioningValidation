@@ -1,0 +1,96 @@
+network_config:
+  -
+    type: sriov_pf
+    defroute: false
+    name: "%PF1_NAME%"
+    numvfs: 10
+    promisc: true
+    use_dhcp: false
+  -
+    type: sriov_pf
+    defroute: false
+    name: "%PF2_NAME%"
+    numvfs: 10
+    promisc: true
+    use_dhcp: false
+  -
+    type: linux_bond
+    name: lnx_bond
+    bonding_options: mode=active-backup
+    addresses:
+      -
+        ip_netmask: 10.10.112.25/24
+    members:
+      -
+        type: sriov_vf
+        device: "%PF1_NAME%"
+        qos: 2
+        spoofcheck: true
+        trust: true
+        vfid: 1
+        vlan_id: "%VF1_VLAN%"
+        primary: true
+      -
+        type: sriov_vf
+        device: "%PF2_NAME%"
+        qos: 2
+        spoofcheck: true
+        trust: true
+        vfid: 1
+        vlan_id: "%VF1_VLAN%"
+
+  -
+    type: sriov_vf
+    addresses:
+      -
+        ip_netmask: "10.10.113.21/24"
+    device: "%PF1_NAME%"
+    qos: 2
+    spoofcheck: true
+    trust: true
+    vfid: 2
+    vlan_id: "%VF2_VLAN%"
+  -
+    type: ovs_bridge
+    name: br-ovs
+    members:
+      -
+        device: "%PF1_NAME%"
+        qos: 2
+        spoofcheck: false
+        type: sriov_vf
+        vfid: 4
+        vlan_id: "%VF4_VLAN%"
+    addresses:
+      -
+        ip_netmask: 10.10.114.25/24
+  -
+    type: ovs_bridge
+    name: br-bond
+    addresses:
+      -
+        ip_netmask: 10.10.120.27/24
+    members:
+      -
+        type: ovs_bond
+        name: bond_ovs
+        bonding_options: mode=active-backup
+        members:
+          -
+            type: sriov_vf
+            device: "%PF1_NAME%"
+            qos: 2
+            spoofcheck: false
+            trust: true
+            vfid: 5
+            vlan_id: "%VF5_VLAN%"
+            primary: true
+
+          -
+            device: "%PF1_NAME%"
+            qos: 2
+            spoofcheck: false
+            trust: true
+            type: sriov_vf
+            vfid: 5
+            vlan_id: "%VF5_VLAN%"
