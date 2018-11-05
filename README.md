@@ -5,11 +5,12 @@ This repo outlines the standalone/full stack templates required to setup and val
 # Standalone validation
 The standalone validation would require 2 baremetal machines with SR-IOV capable NICs. The validation procedure will generate the templates required for NIC partitioning and run os-net-config to create the various network objects (linux bond, ovs bond, ovs bridge, ovs user bridge, dpdk bond, vlan interface). Later ping tests could be run between these 2 machines and verify the setup created.
 
-1. If the NIC Partitioning feature shall use VF's for DPDK then its required to setup hugepages, IOMMU on the host machine. The set_boot_params.sh script shall set the bootparams to enable IOMMU and 1G hugepages. The number of hugepages could be changed if required.
+1. If the NIC Partitioning feature shall use VF's for DPDK then its required to setup hugepages, IOMMU on the host machine. The set_boot_params.sh script shall set the bootparams to enable IOMMU and 1G hugepages. The number of hugepages could be changed if required. This script needs to be run as root user.
 
 ```bash
 sed 's/^\(GRUB_CMDLINE_LINUX=".*\)"/\1 iommu=pt intel_iommu=on default_hugepagesz=1GB hugepagesz=1G hugepages=10"/g' -i /etc/default/grub
 ```
+Reboot the machine after running the set_boot_params.sh
 
 2. The DPDK params shall be set for the host machine. The set_dpdk_params.sh will apply the DPDK params (pmd_cpu_mask, lcore_mask, socket_memory). The CPUs/Socket memory could be customized according to the  NUMA placement of the NIC available for partitioning. Its recommended to use atleast 1 physical core/ 2 Hyperthreads per NUMA for PMDs and 1 core for HOST processes. The below parameters needs to be configured inline with the requirements of OVS-DPDK.
 
