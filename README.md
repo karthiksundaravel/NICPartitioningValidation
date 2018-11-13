@@ -4,7 +4,11 @@ This repo outlines the standalone/full stack templates required to setup and val
 
 # Standalone validation
 The standalone validation would require 2 baremetal machines with SR-IOV capable NICs. The validation procedure will generate the templates required for NIC partitioning and run os-net-config to create the various network objects (linux bond, ovs bond, ovs bridge, ovs user bridge, dpdk bond, vlan interface). Later ping tests could be run between these 2 machines and verify the setup created.
+<<<<<<< HEAD
 The setup shall look like
+=======
+The setup will look like
+>>>>>>> 05b04d113563815e9b6ad911de9df7af40a77678
 ![alt text](images/standalone_testing.jpg)
 
 1. If the NIC Partitioning feature shall use VF's for DPDK then its required to setup hugepages, IOMMU on the host machine. The set_boot_params.sh script shall set the bootparams to enable IOMMU and 1G hugepages. The number of hugepages could be changed if required. This script needs to be run as root user.
