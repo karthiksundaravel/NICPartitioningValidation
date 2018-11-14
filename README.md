@@ -18,15 +18,20 @@ This setup will validate
 
 Prerequisites:
 * Virtualisation tools like libvirt, virt-install, qemu-kvm shall be installed
-* In /etc/libvirt/qemu.conf, change the permissions for user and group:
+* In /etc/libvirt/qemu.conf, change the permissions for user and group
+```
   user = 'qemu'
   group = "hugetlbfs"
+```
 * rhel_guest_7.xxx.qcow2 image shall be available at ``/var/lib/libvirt/images/`` with user: qemu and group:hugetlbfs
-* The rhel_guest_7.xxx.qcow2 shall have root password set using virt-customize:
+* The directory /var/lib/vhost_sockets/ is created with user: qemu and group:hugetlbfs
+* The rhel_guest_7.xxx.qcow2 shall have root password set using virt-customize
+```bash
   virt-customize -a rhel_guest_7.xxx.qcow2 --run-command 'yum remove cloud-init* -y'
   virt-customize -a rhel_guest_7.xxx.qcow2 --root-password password:****
+```
 
-* The directory /var/lib/vhost_sockets/ is created with user: qemu and group:hugetlbfs
+
 
 ## Node - A setup ##
 The Node-A setup involves will have linux bond, SR-IOV VF, ovs bond, ovs bridge.
