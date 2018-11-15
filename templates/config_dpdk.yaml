@@ -52,7 +52,7 @@ network_config:
     vlan_id: "%VF2_VLAN%"
   -
     type: ovs_user_bridge
-    name: br-ovs
+    name: br-dpdk
     members:
       -
         type: ovs_dpdk_port
@@ -71,7 +71,7 @@ network_config:
         ip_netmask: 10.10.114.25/24
   -
     type: ovs_user_bridge
-    name: br-bond
+    name: br-vfs
     addresses:
       -
         ip_netmask: 10.10.120.27/24
@@ -97,10 +97,9 @@ network_config:
           -
             type: ovs_dpdk_port
             name: dpdk2
-            primary: true
             members:
               -
-                device: "%PF1_NAME%"
+                device: "%PF2_NAME%"
                 qos: 2
                 spoofcheck: false
                 trust: true

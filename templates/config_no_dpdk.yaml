@@ -87,7 +87,7 @@ network_config:
             primary: true
 
           -
-            device: "%PF1_NAME%"
+            device: "%PF2_NAME%"
             qos: 2
             spoofcheck: false
             trust: true
