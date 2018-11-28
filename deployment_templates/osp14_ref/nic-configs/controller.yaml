@@ -1,0 +1,337 @@
+heat_template_version: rocky
+description: >
+  Software Config to drive os-net-config to configure VLANs for the Controller role.
+parameters:
+  ControlPlaneIp:
+    default: ''
+    description: IP address/subnet on the ctlplane network
+    type: string
+  ControlPlaneSubnetCidr:
+    default: ''
+    description: >
+      The subnet CIDR of the control plane network. (The parameter is
+      automatically resolved from the ctlplane subnet's cidr attribute.)
+    type: string
+  ControlPlaneDefaultRoute:
+    default: ''
+    description: The default route of the control plane network. (The parameter
+      is automatically resolved from the ctlplane subnet's gateway_ip attribute.)
+    type: string
+
+  StorageIpSubnet:
+    default: ''
+    description: IP address/subnet on the storage network
+    type: string
+  StorageNetworkVlanID:
+    default: 30
+    description: Vlan ID for the storage network traffic.
+    type: number
+  StorageInterfaceRoutes:
+    default: []
+    description: >
+      Routes for the storage network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  StorageMgmtIpSubnet:
+    default: ''
+    description: IP address/subnet on the storage_mgmt network
+    type: string
+  StorageMgmtNetworkVlanID:
+    default: 40
+    description: Vlan ID for the storage_mgmt network traffic.
+    type: number
+  StorageMgmtInterfaceRoutes:
+    default: []
+    description: >
+      Routes for the storage_mgmt network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  InternalApiIpSubnet:
+    default: ''
+    description: IP address/subnet on the internal_api network
+    type: string
+  InternalApiNetworkVlanID:
+    default: 20
+    description: Vlan ID for the internal_api network traffic.
+    type: number
+  InternalApiInterfaceRoutes:
+    default: []
+    description: >
+      Routes for the internal_api network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  TenantIpSubnet:
+    default: ''
+    description: IP address/subnet on the tenant network
+    type: string
+  TenantNetworkVlanID:
+    default: 50
+    description: Vlan ID for the tenant network traffic.
+    type: number
+  TenantInterfaceRoutes:
+    default: []
+    description: >
+      Routes for the tenant network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  ExternalIpSubnet:
+    default: ''
+    description: IP address/subnet on the external network
+    type: string
+  ExternalNetworkVlanID:
+    default: 10
+    description: Vlan ID for the external network traffic.
+    type: number
+  ExternalInterfaceDefaultRoute:
+    default: '10.0.0.1'
+    description: default route for the external network
+    type: string
+  ExternalInterfaceRoutes:
+    default: []
+    description: >
+      Routes for the external network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  ManagementIpSubnet:
+    default: ''
+    description: IP address/subnet on the management network
+    type: string
+  ManagementNetworkVlanID:
+    default: 60
+    description: Vlan ID for the management network traffic.
+    type: number
+  ManagementInterfaceRoutes:
+    default: []
+    description: >
+      Routes for the management network traffic.
+      JSON route e.g. [{'destination':'10.0.0.0/16', 'nexthop':'10.0.0.1'}]
+      Unless the default is changed, the parameter is automatically resolved
+      from the subnet host_routes attribute.
+    type: json
+  DnsServers: # Override this via parameter_defaults
+    default: []
+    description: >
+      DNS servers to use for the Overcloud (2 max for some implementations).
+      If not set the nameservers configured in the ctlplane subnet's
+      dns_nameservers attribute will be used.
+    type: comma_delimited_list
+  EC2MetadataIp:
+    default: ''
+    description: The IP address of the EC2 metadata server. (The parameter
+      is automatically resolved from the ctlplane subnet's host_routes attribute.)
+    type: string
+  # Local parameter used for internal lab easy template management
+  LocalProvisioningNicName:
+    type: string
+
+resources:
+  OsNetConfigImpl:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config:
+        str_replace:
+          template:
+            get_file: /usr/share/openstack-tripleo-heat-templates/network/scripts/run-os-net-config.sh
+          params:
+            $network_config:
+              network_config:
+              - type: ovs_bridge
+                name: br-ex
+                use_dhcp: false
+                dns_servers:
+                  get_param: DnsServers
+                addresses:
+                - ip_netmask:
+                    list_join:
+                    - /
+                    - - get_param: ControlPlaneIp
+                      - get_param: ControlPlaneSubnetCidr
+                routes:
+                -
+                  default: true
+                  next_hop:
+                    get_param: ControlPlaneDefaultRoute
+                - ip_netmask: 169.254.169.254/32
+                  next_hop:
+                    get_param: EC2MetadataIp
+                members:
+                - type: interface
+                  name:
+                    get_param: LocalProvisioningNicName
+              - type: interface
+                name: em1
+                use_dhcp: false
+                defroute: false
+                onboot: false
+              - type: sriov_pf
+                name: p4p1
+                use_dhcp: false
+                defroute: false
+                numvfs: 10
+                promisc: on
+              - type: sriov_pf
+                name: p4p2
+                use_dhcp: false
+                defroute: false
+                numvfs: 10
+                promisc: on
+              -
+                type: linux_bond
+                name: intapi_bond
+                bonding_options: mode=active-backup
+                addresses:
+                  - ip_netmask:
+                      get_param: InternalApiIpSubnet
+                members:
+                  -
+                    type: sriov_vf
+                    device: p4p1
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 1
+                    vlan_id:
+                      get_param: InternalApiNetworkVlanID
+                    primary: true
+                  -
+                    type: sriov_vf
+                    device: p4p2
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 1
+                    vlan_id:
+                      get_param: InternalApiNetworkVlanID
+              -
+                type: ovs_bridge
+                name: br-tenant
+                addresses:
+                  - ip_netmask:
+                      get_param: TenantIpSubnet
+                members:
+                  -
+                    type: ovs_bond
+                    name: tnt_bond
+                    ovs_options: bond_mode=active-backup
+                    members:
+                      -
+                        type: sriov_vf
+                        device: p4p1
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        vfid: 2
+                        promisc: on
+                        vlan_id:
+                          get_param: TenantNetworkVlanID
+                        primary: true
+                      -
+                        device: p4p2
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        type: sriov_vf
+                        vfid: 2
+                        promisc: on
+                        vlan_id:
+                          get_param: TenantNetworkVlanID
+              -
+                type: linux_bond
+                name: st_bond
+                bonding_options: mode=active-backup
+                addresses:
+                  - ip_netmask:
+                      get_param: StorageIpSubnet
+                members:
+                  -
+                    type: sriov_vf
+                    device: p4p1
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 3
+                    vlan_id:
+                      get_param: StorageNetworkVlanID
+                    primary: true
+                  -
+                    type: sriov_vf
+                    device: p4p2
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 3
+                    vlan_id:
+                      get_param: StorageNetworkVlanID
+              -
+                type: linux_bond
+                name: stm_bond
+                bonding_options: mode=active-backup
+                addresses:
+                  - ip_netmask:
+                      get_param: StorageMgmtIpSubnet
+                members:
+                  -
+                    type: sriov_vf
+                    device: p4p1
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 4
+                    vlan_id:
+                      get_param: StorageMgmtNetworkVlanID
+                    primary: true
+                  -
+                    type: sriov_vf
+                    device: p4p2
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 4
+                    vlan_id:
+                      get_param: StorageMgmtNetworkVlanID
+              -
+                type: ovs_bridge
+                name: br-vfs
+                members:
+                  -
+                    type: ovs_bond
+                    name: bond_ovs
+                    ovs_options: bond_mode=active-backup
+                    members:
+                      -
+                        type: sriov_vf
+                        device: p4p1
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        vfid: 5
+                        vlan_id: 520
+                        promisc: on
+                        primary: true
+                      -
+                        device: p4p2
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        type: sriov_vf
+                        vfid: 5
+                        vlan_id: 520
+                        promisc: on
+              
+outputs:
+  OS::stack_id:
+    description: The OsNetConfigImpl resource.
+    value:
+      get_resource: OsNetConfigImpl
+
