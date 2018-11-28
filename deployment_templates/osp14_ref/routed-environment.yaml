@@ -1,0 +1,21 @@
+parameter_defaults:
+  ControlPlaneSubnet: ctlplane-subnet
+  ControllerControlPlaneSubnet: ctlplane-subnet
+  ComputeControlPlaneSubnet: ctlplane-subnet
+  ComputeOvsDpdkControlPlaneSubnet: ctlplane-subnet
+  # ComputeOvsDpdkSriovControlPlaneSubnet: ctlplane-subnet
+
+  ControlPlaneDefaultRoute: "192.16.0.1"
+  ControlPlaneSubnetCidr: "24"
+  EC2MetadataIp: "192.16.0.1"
+
+  ## Figure out a way to set the correct routes for controller's ControlPlane
+  ## for additional subnet
+  #ControlPlaneSubnetCidrFull: "192.168.10.0/24"
+  #ControlPlaneLeaf1SubnetCidrFull: "192.168.11.0/24"
+
+  TenantSupernet: 10.10.115.0/24
+  StorageSupernet: 10.10.113.0/24
+  InternalApiSupernet: 10.10.112.0/24
+  StorageMgmtSupernet: 10.10.114.0/24
+

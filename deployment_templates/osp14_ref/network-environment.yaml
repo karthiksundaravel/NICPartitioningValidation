@@ -1,0 +1,18 @@
+resource_registry:
+  OS::TripleO::Compute::Net::SoftwareConfig: nic-configs/computeovsdpdksriov.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: nic-configs/controller.yaml
+  OS::TripleO::NodeUserData: ./first-boot.yaml
+  OS::TripleO::Network::External: OS::Heat::None
+  OS::TripleO::Controller::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Network::Ports::ExternalVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+
+parameter_defaults:
+  DnsServers: ['10.11.5.19']
+  NeutronExternalNetworkBridge: "''"
+
+  NeutronNetworkVLANRanges: ""
+  NeutronBridgeMappings: "sriovnet1:sriov1,sriovnet2:sriov2,prov:br-vfs"
+  NeutronFlatNetworks: "datacentre,sriovnet1,sriovnet2,prov"
+  NeutronNetworkType: ['vxlan']
+  NeutronTunnelTypes: "vxlan"
