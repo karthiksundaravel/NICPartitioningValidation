@@ -302,7 +302,6 @@ resources:
                         type: sriov_vf
                         vfid: 5
                         vlan_id: 520
-              
 outputs:
   OS::stack_id:
     description: The OsNetConfigImpl resource.
