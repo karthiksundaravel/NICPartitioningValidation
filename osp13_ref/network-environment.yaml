@@ -1,0 +1,44 @@
+resource_registry:
+  OS::TripleO::ComputeOvsDpdk::Net::SoftwareConfig: nic-configs/computeovsdpdk.yaml
+  OS::TripleO::Controller::Net::SoftwareConfig: nic-configs/controller.yaml
+  OS::TripleO::Network::External: OS::Heat::None
+  OS::TripleO::Controller::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Network::Ports::ExternalVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+parameter_defaults:
+  ControlPlaneDefaultRoute: "192.16.0.1"
+  ControlPlaneSubnetCidr: "24"
+  DnsServers: ['10.11.5.19']
+  EC2MetadataIp: "192.16.0.1"
+  NtpServer: "clock.redhat.com"
+
+  ExternalAllocationPools: [{'start': '192.16.0.201', 'end': '192.16.0.240'}]
+  ExternalNetCidr: "192.16.0.0/24"
+  #ExternalNetworkVlanID: 135
+  NeutronExternalNetworkBridge: "''"
+  ExternalInterfaceDefaultRoute: "10.9.88.254"
+
+  InternalApiNetCidr: 10.10.112.0/24
+  StorageNetCidr: 10.10.113.0/24
+  StorageMgmtNetCidr: 10.10.114.0/24
+  TenantNetCidr: 10.10.115.0/24
+  InternalApiNetworkVlanID: 512
+  StorageNetworkVlanID: 512
+  StorageMgmtNetworkVlanID: 514
+  TenantNetworkVlanID: 515
+  InternalApiAllocationPools: [{'start': '10.10.112.20', 'end': '10.10.112.200'}]
+  StorageAllocationPools: [{'start': '10.10.113.20', 'end': '10.10.113.200'}]
+  StorageMgmtAllocationPools: [{'start': '10.10.114.20', 'end': '10.10.114.200'}]
+  TenantAllocationPools: [{'start': '10.10.115.20', 'end': '10.10.115.200'}]
+
+  ControllerCount: 1
+  OvercloudControllerFlavor: control
+  ComputeOvsDpdkCount: 1
+  OvercloudComputeOvsDpdkFlavor: compute
+  ComputeCount: 0
+  OvercloudComputeFlavor: compute
+
+  NeutronBridgeMappings: "sriovnet1:sriov1,sriovnet2:sriov2,prov:br-vfs"
+  NeutronFlatNetworks: "datacentre,sriovnet1,sriovnet2,prov"
+  NeutronNetworkType: ['vxlan']
+  NeutronTunnelTypes: "vxlan"
