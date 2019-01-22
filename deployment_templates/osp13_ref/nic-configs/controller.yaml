@@ -1,0 +1,276 @@
+heat_template_version: queens
+description: >
+  Software Config to drive os-net-config to configure multiple interfaces for the Compute role.
+parameters:
+  ControlPlaneIp:
+    default: ''
+    description: IP address/subnet on the ctlplane network
+    type: string
+  StorageIpSubnet:
+    default: ''
+    description: IP address/subnet on the storage network
+    type: string
+  StorageMgmtIpSubnet:
+    default: ''
+    description: IP address/subnet on the storage_mgmt network
+    type: string
+  InternalApiIpSubnet:
+    default: ''
+    description: IP address/subnet on the internal_api network
+    type: string
+  TenantIpSubnet:
+    default: ''
+    description: IP address/subnet on the tenant network
+    type: string
+  ExternalIpSubnet:
+    default: ''
+    description: IP address/subnet on the external network
+    type: string
+  ManagementIpSubnet:
+    default: ''
+    description: IP address/subnet on the management network
+    type: string
+  StorageNetworkVlanID:
+    default: 30
+    description: Vlan ID for the storage network traffic.
+    type: number
+  StorageMgmtNetworkVlanID:
+    default: 40
+    description: Vlan ID for the storage_mgmt network traffic.
+    type: number
+  InternalApiNetworkVlanID:
+    default: 20
+    description: Vlan ID for the internal_api network traffic.
+    type: number
+  TenantNetworkVlanID:
+    default: 50
+    description: Vlan ID for the tenant network traffic.
+    type: number
+  ExternalNetworkVlanID:
+    default: 10
+    description: Vlan ID for the external network traffic.
+    type: number
+  ManagementNetworkVlanID:
+    default: 60
+    description: Vlan ID for the management network traffic.
+    type: number
+  ControlPlaneSubnetCidr: # Override this via parameter_defaults
+    default: '24'
+    description: The subnet CIDR of the control plane network.
+    type: string
+  ControlPlaneDefaultRoute: # Override this via parameter_defaults
+    description: The default route of the control plane network.
+    type: string
+  ExternalInterfaceDefaultRoute:
+    default: '10.0.0.1'
+    description: default route for the external network
+    type: string
+  DnsServers: # Override this via parameter_defaults
+    default: []
+    description: A list of DNS servers (2 max for some implementations) that will be added to resolv.conf.
+    type: comma_delimited_list
+  EC2MetadataIp: # Override this via parameter_defaults
+    description: The IP address of the EC2 metadata server.
+    type: string
+  LocalProvisioningNicName:
+    type: string
+
+resources:
+  OsNetConfigImpl:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config:
+        str_replace:
+          template:
+            get_file: /usr/share/openstack-tripleo-heat-templates/network/scripts/run-os-net-config.sh
+          params:
+            $network_config:
+              network_config:
+              - type: ovs_bridge
+                name: br-ex
+                use_dhcp: false
+                dns_servers:
+                  get_param: DnsServers
+                addresses:
+                - ip_netmask:
+                    list_join:
+                    - /
+                    - - get_param: ControlPlaneIp
+                      - get_param: ControlPlaneSubnetCidr
+                routes:
+                -
+                  default: true
+                  next_hop:
+                    get_param: ControlPlaneDefaultRoute
+                - ip_netmask: 169.254.169.254/32
+                  next_hop:
+                    get_param: EC2MetadataIp
+                members:
+                - type: interface
+                  name:
+                    get_param: LocalProvisioningNicName
+              - type: interface
+                name: em1
+                use_dhcp: false
+                defroute: false
+                onboot: false
+              - type: sriov_pf
+                name: p4p1
+                use_dhcp: false
+                defroute: false
+                numvfs: 10
+                promisc: on
+              - type: sriov_pf
+                name: p4p2
+                use_dhcp: false
+                defroute: false
+                numvfs: 10
+                promisc: on
+              -
+                type: linux_bond
+                name: intapi_bond
+                bonding_options: mode=active-backup
+                addresses:
+                  - ip_netmask:
+                      get_param: InternalApiIpSubnet
+                members:
+                  -
+                    type: sriov_vf
+                    device: p4p1
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 1
+                    vlan_id:
+                      get_param: InternalApiNetworkVlanID
+                    primary: true
+                  -
+                    type: sriov_vf
+                    device: p4p2
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 1
+                    vlan_id:
+                      get_param: InternalApiNetworkVlanID
+              -
+                type: ovs_bridge
+                name: br-tenant
+                addresses:
+                  - ip_netmask:
+                      get_param: TenantIpSubnet
+                members:
+                  -
+                    type: ovs_bond
+                    name: tnt_bond
+                    ovs_options: bond_mode=active-backup
+                    members:
+                      -
+                        type: sriov_vf
+                        device: p4p1
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        vfid: 2
+                        promisc: on
+                        vlan_id:
+                          get_param: TenantNetworkVlanID
+                        primary: true
+                      -
+                        device: p4p2
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        type: sriov_vf
+                        vfid: 2
+                        promisc: on
+                        vlan_id:
+                          get_param: TenantNetworkVlanID
+              -
+                type: linux_bond
+                name: st_bond
+                bonding_options: mode=active-backup
+                addresses:
+                  - ip_netmask:
+                      get_param: StorageIpSubnet
+                members:
+                  -
+                    type: sriov_vf
+                    device: p4p1
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 3
+                    vlan_id:
+                      get_param: StorageNetworkVlanID
+                    primary: true
+                  -
+                    type: sriov_vf
+                    device: p4p2
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 3
+                    vlan_id:
+                      get_param: StorageNetworkVlanID
+              -
+                type: linux_bond
+                name: stm_bond
+                bonding_options: mode=active-backup
+                addresses:
+                  - ip_netmask:
+                      get_param: StorageMgmtIpSubnet
+                members:
+                  -
+                    type: sriov_vf
+                    device: p4p1
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 4
+                    vlan_id:
+                      get_param: StorageMgmtNetworkVlanID
+                    primary: true
+                  -
+                    type: sriov_vf
+                    device: p4p2
+                    qos: 2
+                    spoofcheck: on
+                    trust: on
+                    vfid: 4
+                    vlan_id:
+                      get_param: StorageMgmtNetworkVlanID
+              -
+                type: ovs_bridge
+                name: br-vfs
+                members:
+                  -
+                    type: ovs_bond
+                    name: bond_ovs
+                    ovs_options: bond_mode=active-backup
+                    members:
+                      -
+                        type: sriov_vf
+                        device: p4p1
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        vfid: 5
+                        vlan_id: 520
+                        promisc: on
+                        primary: true
+                      -
+                        device: p4p2
+                        qos: 2
+                        spoofcheck: off
+                        trust: on
+                        type: sriov_vf
+                        vfid: 5
+                        vlan_id: 520
+                        promisc: on
+outputs:
+  OS::stack_id:
+    description: The OsNetConfigImpl resource.
+    value:
+      get_resource: OsNetConfigImpl
